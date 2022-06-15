@@ -22,7 +22,7 @@
     * [Unintended breaking changes](#unintended-breaking-changes)
       * [Reverting commits](#reverting-commits)
   * [Introducing new modules](#introducing-new-modules)
-  * [Additions to Node-API](#additions-to-n-api)
+  * [Additions to Node-API](#additions-to-node-api)
   * [Deprecations](#deprecations)
   * [Involving the TSC](#involving-the-tsc)
 * [Landing pull requests](#landing-pull-requests)
@@ -232,13 +232,13 @@ There are some other files that touch the build chain. Changes in the following
 files also qualify as affecting the `node` binary:
 
 * `tools/*.py`
-* `tools/build-addons.js`
+* `tools/build-addons.mjs`
 * `*.gyp`
 * `*.gypi`
 * `configure`
 * `configure.py`
 * `Makefile`
-* `vcbuilt.bat`
+* `vcbuild.bat`
 
 </details>
 
@@ -815,7 +815,7 @@ might impact an LTS release.
 | `lib/zlib`                                                                 | @nodejs/zlib                                                          |
 | `src/async_wrap.*`                                                         | @nodejs/async\_hooks                                                  |
 | `src/node_api.*`                                                           | @nodejs/node-api                                                      |
-| `src/node_crypto.*`                                                        | @nodejs/crypto                                                        |
+| `src/node_crypto.*`, `src/crypto`                                          | @nodejs/crypto                                                        |
 | `test/*`                                                                   | @nodejs/testing                                                       |
 | `tools/node_modules/eslint`, `.eslintrc`                                   | @nodejs/linting                                                       |
 | build                                                                      | @nodejs/build                                                         |

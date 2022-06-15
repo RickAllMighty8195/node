@@ -8,24 +8,24 @@
 
 <!-- source_link=lib/net.js -->
 
-The `net` module provides an asynchronous network API for creating stream-based
+The `node:net` module provides an asynchronous network API for creating stream-based
 TCP or [IPC][] servers ([`net.createServer()`][]) and clients
 ([`net.createConnection()`][]).
 
 It can be accessed using:
 
 ```js
-const net = require('net');
+const net = require('node:net');
 ```
 
 ## IPC support
 
-The `net` module supports IPC with named pipes on Windows, and Unix domain
+The `node:net` module supports IPC with named pipes on Windows, and Unix domain
 sockets on other operating systems.
 
 ### Identifying paths for IPC connections
 
-[`net.connect()`][], [`net.createConnection()`][], [`server.listen()`][] and
+[`net.connect()`][], [`net.createConnection()`][], [`server.listen()`][], and
 [`socket.connect()`][] take a `path` parameter to identify IPC endpoints.
 
 On Unix, the local domain is also known as the Unix domain. The path is a
@@ -285,6 +285,10 @@ Emitted when the server has been bound after calling [`server.listen()`][].
 
 <!-- YAML
 added: v0.1.90
+changes:
+  - version: v18.0.0
+    pr-url: https://github.com/nodejs/node/pull/41431
+    description: The `family` property now returns a number instead of a string.
 -->
 
 * Returns: {Object|string|null}
@@ -292,7 +296,7 @@ added: v0.1.90
 Returns the bound `address`, the address `family` name, and `port` of the server
 as reported by the operating system if listening on an IP socket
 (useful to find which port was assigned when getting an OS-assigned address):
-`{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`.
+`{ port: 12346, family: 4, address: '127.0.0.1' }`.
 
 For a server listening on a pipe or Unix domain socket, the name is returned
 as a string.
@@ -710,7 +714,7 @@ Not applicable to Unix sockets.
 
 * `err` {Error|null} The error object. See [`dns.lookup()`][].
 * `address` {string} The IP address.
-* `family` {string|null} The address type. See [`dns.lookup()`][].
+* `family` {number|null} The address type. See [`dns.lookup()`][].
 * `host` {string} The host name.
 
 ### Event: `'ready'`
@@ -738,13 +742,17 @@ See also: [`socket.setTimeout()`][].
 
 <!-- YAML
 added: v0.1.90
+changes:
+  - version: v18.0.0
+    pr-url: https://github.com/nodejs/node/pull/41431
+    description: The `family` property now returns a number instead of a string.
 -->
 
 * Returns: {Object}
 
 Returns the bound `address`, the address `family` name and `port` of the
 socket as reported by the operating system:
-`{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`
+`{ port: 12346, family: 4, address: '127.0.0.1' }`
 
 ### `socket.bufferSize`
 
@@ -822,6 +830,12 @@ behavior.
 <!-- YAML
 added: v0.1.90
 changes:
+  - version:
+    - v17.7.0
+    - v16.15.0
+    pr-url: https://github.com/nodejs/node/pull/41310
+    description: The `noDelay`, `keepAlive` and `keepAliveInitialDelay`
+                 options are supported now.
   - version: v12.10.0
     pr-url: https://github.com/nodejs/node/pull/25436
     description: Added `onread` option.
@@ -888,7 +902,7 @@ For both types, available `options` include:
 Following is an example of a client using the `onread` option:
 
 ```js
-const net = require('net');
+const net = require('node:net');
 net.connect({
   port: 80,
   onread: {
@@ -1075,6 +1089,19 @@ added: v0.5.10
 
 The numeric representation of the remote port. For example, `80` or `21`.
 
+### `socket.resetAndDestroy()`
+
+<!-- YAML
+added: v18.3.0
+-->
+
+* Returns: {net.Socket}
+
+Close the TCP connection by sending an RST packet and destroy the stream.
+If this TCP socket is in connecting status, it will send an RST packet and destroy this TCP socket once it is connected.
+Otherwise, it will call `socket.destroy` with an `ERR_SOCKET_CLOSED` Error.
+If this is not a TCP socket (for example, a pipe), calling this method will immediately throw an `ERR_INVALID_HANDLE_TYPE` Error.
+
 ### `socket.resume()`
 
 * Returns: {net.Socket} The socket itself.
@@ -1149,7 +1176,7 @@ algorithm.
 <!-- YAML
 added: v0.1.90
 changes:
-  - version: REPLACEME
+  - version: v18.0.0
     pr-url: https://github.com/nodejs/node/pull/41678
     description: Passing an invalid callback to the `callback` argument
                  now throws `ERR_INVALID_ARG_TYPE` instead of
@@ -1344,7 +1371,7 @@ Following is an example of a client of the echo server described
 in the [`net.createServer()`][] section:
 
 ```js
-const net = require('net');
+const net = require('node:net');
 const client = net.createConnection({ port: 8124 }, () => {
   // 'connect' listener.
   console.log('connected to server!');
@@ -1460,7 +1487,7 @@ Here is an example of a TCP echo server which listens for connections
 on port 8124:
 
 ```js
-const net = require('net');
+const net = require('node:net');
 const server = net.createServer((c) => {
   // 'connection' listener.
   console.log('client connected');

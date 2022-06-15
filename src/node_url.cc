@@ -142,19 +142,9 @@ URLHost::~URLHost() {
   XX(ARG_FRAGMENT)                                                            \
   XX(ARG_COUNT)  // This one has to be last.
 
-#define ERR_ARGS(XX)                                                          \
-  XX(ERR_ARG_FLAGS)                                                           \
-  XX(ERR_ARG_INPUT)                                                           \
-
 enum url_cb_args {
 #define XX(name) name,
   ARGS(XX)
-#undef XX
-};
-
-enum url_error_cb_args {
-#define XX(name) name,
-  ERR_ARGS(XX)
 #undef XX
 };
 
@@ -232,15 +222,14 @@ void AppendOrEscape(std::string* str,
     *str += ch;
 }
 
-template <typename T>
-unsigned hex2bin(const T ch) {
+unsigned hex2bin(const char ch) {
   if (ch >= '0' && ch <= '9')
     return ch - '0';
   if (ch >= 'A' && ch <= 'F')
     return 10 + (ch - 'A');
   if (ch >= 'a' && ch <= 'f')
     return 10 + (ch - 'a');
-  return static_cast<unsigned>(-1);
+  UNREACHABLE();
 }
 
 std::string PercentDecode(const char* input, size_t len) {
@@ -422,8 +411,7 @@ void URLHost::ParseIPv4Host(const char* input, size_t length, bool* is_ipv4) {
     const char ch = pointer < end ? pointer[0] : kEOL;
     int64_t remaining = end - pointer - 1;
     if (ch == '.' || ch == kEOL) {
-      if (++parts > static_cast<int>(arraysize(numbers)))
-        return;
+      if (++parts > static_cast<int>(arraysize(numbers))) return;
       if (pointer == mark)
         return;
       int64_t n = ParseNumber(mark, pointer);
@@ -932,7 +920,10 @@ void URL::Parse(const char* input,
             url->flags &= ~URL_FLAGS_SPECIAL;
             special = false;
           }
-          special_back_slash = (special && ch == '\\');
+          // `special_back_slash` equals to `(special && ch == '\\')` and `ch`
+          // here always not equals to `\\`. So `special_back_slash` here always
+          // equals to `false`.
+          special_back_slash = false;
           buffer.clear();
           if (has_state_override)
             return;
@@ -1674,14 +1665,10 @@ void Parse(Environment* env,
       null,  // fragment defaults to null
     };
     SetArgs(env, argv, url);
-    cb->Call(context, recv, arraysize(argv), argv).FromMaybe(Local<Value>());
+    USE(cb->Call(context, recv, arraysize(argv), argv));
   } else if (error_cb->IsFunction()) {
-    Local<Value> argv[2] = { undef, undef };
-    argv[ERR_ARG_FLAGS] = Integer::NewFromUnsigned(isolate, url.flags);
-    argv[ERR_ARG_INPUT] =
-      String::NewFromUtf8(env->isolate(), input).ToLocalChecked();
-    error_cb.As<Function>()->Call(context, recv, arraysize(argv), argv)
-        .FromMaybe(Local<Value>());
+    Local<Value> flags = Integer::NewFromUnsigned(isolate, url.flags);
+    USE(error_cb.As<Function>()->Call(context, recv, 1, &flags));
   }
 }
 

@@ -1,5 +1,4 @@
 #include "env.h"
-#include "allocated_buffer-inl.h"
 #include "async_wrap.h"
 #include "base_object-inl.h"
 #include "debug_utils-inl.h"
@@ -545,21 +544,21 @@ void Environment::InitializeLibuv() {
   CHECK_EQ(0, uv_timer_init(event_loop(), timer_handle()));
   uv_unref(reinterpret_cast<uv_handle_t*>(timer_handle()));
 
-  uv_check_init(event_loop(), immediate_check_handle());
+  CHECK_EQ(0, uv_check_init(event_loop(), immediate_check_handle()));
   uv_unref(reinterpret_cast<uv_handle_t*>(immediate_check_handle()));
 
-  uv_idle_init(event_loop(), immediate_idle_handle());
+  CHECK_EQ(0, uv_idle_init(event_loop(), immediate_idle_handle()));
 
-  uv_check_start(immediate_check_handle(), CheckImmediate);
+  CHECK_EQ(0, uv_check_start(immediate_check_handle(), CheckImmediate));
 
   // Inform V8's CPU profiler when we're idle.  The profiler is sampling-based
   // but not all samples are created equal; mark the wall clock time spent in
   // epoll_wait() and friends so profiling tools can filter it out.  The samples
   // still end up in v8.log but with state=IDLE rather than state=EXTERNAL.
-  uv_prepare_init(event_loop(), &idle_prepare_handle_);
-  uv_check_init(event_loop(), &idle_check_handle_);
+  CHECK_EQ(0, uv_prepare_init(event_loop(), &idle_prepare_handle_));
+  CHECK_EQ(0, uv_check_init(event_loop(), &idle_check_handle_));
 
-  uv_async_init(
+  CHECK_EQ(0, uv_async_init(
       event_loop(),
       &task_queues_async_,
       [](uv_async_t* async) {
@@ -568,7 +567,7 @@ void Environment::InitializeLibuv() {
         HandleScope handle_scope(env->isolate());
         Context::Scope context_scope(env->context());
         env->RunAndClearNativeImmediates();
-      });
+      }));
   uv_unref(reinterpret_cast<uv_handle_t*>(&idle_prepare_handle_));
   uv_unref(reinterpret_cast<uv_handle_t*>(&idle_check_handle_));
   uv_unref(reinterpret_cast<uv_handle_t*>(&task_queues_async_));
@@ -674,8 +673,7 @@ void Environment::PrintSyncTrace() const {
 
 void Environment::RunCleanup() {
   started_cleanup_ = true;
-  TraceEventScope trace_scope(TRACING_CATEGORY_NODE1(environment),
-                              "RunCleanup", this);
+  TRACE_EVENT0(TRACING_CATEGORY_NODE1(environment), "RunCleanup");
   bindings_.clear();
   CleanupHandles();
 
@@ -717,8 +715,7 @@ void Environment::RunCleanup() {
 }
 
 void Environment::RunAtExitCallbacks() {
-  TraceEventScope trace_scope(TRACING_CATEGORY_NODE1(environment),
-                              "AtExit", this);
+  TRACE_EVENT0(TRACING_CATEGORY_NODE1(environment), "AtExit");
   for (ExitCallback at_exit : at_exit_functions_) {
     at_exit.cb_(at_exit.arg_);
   }
@@ -744,8 +741,8 @@ void Environment::RunAndClearInterrupts() {
 }
 
 void Environment::RunAndClearNativeImmediates(bool only_refed) {
-  TraceEventScope trace_scope(TRACING_CATEGORY_NODE1(environment),
-                              "RunAndClearNativeImmediates", this);
+  TRACE_EVENT0(TRACING_CATEGORY_NODE1(environment),
+               "RunAndClearNativeImmediates");
   HandleScope handle_scope(isolate_);
   InternalCallbackScope cb_scope(this, Object::New(isolate_), { 0, 0 });
 
@@ -849,8 +846,7 @@ void Environment::ToggleTimerRef(bool ref) {
 
 void Environment::RunTimers(uv_timer_t* handle) {
   Environment* env = Environment::from_timer_handle(handle);
-  TraceEventScope trace_scope(TRACING_CATEGORY_NODE1(environment),
-                              "RunTimers", env);
+  TRACE_EVENT0(TRACING_CATEGORY_NODE1(environment), "RunTimers");
 
   if (!env->can_call_into_js())
     return;
@@ -911,8 +907,7 @@ void Environment::RunTimers(uv_timer_t* handle) {
 
 void Environment::CheckImmediate(uv_check_t* handle) {
   Environment* env = Environment::from_immediate_check_handle(handle);
-  TraceEventScope trace_scope(TRACING_CATEGORY_NODE1(environment),
-                              "CheckImmediate", env);
+  TRACE_EVENT0(TRACING_CATEGORY_NODE1(environment), "CheckImmediate");
 
   HandleScope scope(env->isolate());
   Context::Scope context_scope(env->context());

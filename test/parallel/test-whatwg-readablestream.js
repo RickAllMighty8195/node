@@ -32,6 +32,7 @@ const {
   readableStreamDefaultControllerCanCloseOrEnqueue,
   readableByteStreamControllerClose,
   readableByteStreamControllerRespond,
+  readableStreamReaderGenericRelease,
 } = require('internal/webstreams/readablestream');
 
 const {
@@ -78,6 +79,36 @@ const {
   assert(!r.locked);
   r.getReader();
   assert(r.locked);
+}
+
+{
+  // Throw error and return rejected promise in `cancel()` method
+  // would execute same cleanup code
+  const r1 = new ReadableStream({
+    cancel: () => {
+      return Promise.reject('Cancel Error');
+    },
+  });
+  r1.cancel().finally(common.mustCall(() => {
+    const controllerState = r1[kState].controller[kState];
+
+    assert.strictEqual(controllerState.pullAlgorithm, undefined);
+    assert.strictEqual(controllerState.cancelAlgorithm, undefined);
+    assert.strictEqual(controllerState.sizeAlgorithm, undefined);
+  })).catch(() => {});
+
+  const r2 = new ReadableStream({
+    cancel() {
+      throw new Error('Cancel Error');
+    }
+  });
+  r2.cancel().finally(common.mustCall(() => {
+    const controllerState = r2[kState].controller[kState];
+
+    assert.strictEqual(controllerState.pullAlgorithm, undefined);
+    assert.strictEqual(controllerState.cancelAlgorithm, undefined);
+    assert.strictEqual(controllerState.sizeAlgorithm, undefined);
+  })).catch(() => {});
 }
 
 {
@@ -339,6 +370,24 @@ assert.throws(() => {
   assert.rejects(closedBefore, {
     code: 'ERR_INVALID_STATE',
   });
+}
+
+{
+  const stream = new ReadableStream();
+  const iterable = stream.values();
+  readableStreamReaderGenericRelease(stream[kState].reader);
+  assert.rejects(iterable.next(), {
+    code: 'ERR_INVALID_STATE',
+  }).then(common.mustCall());
+}
+
+{
+  const stream = new ReadableStream();
+  const iterable = stream.values();
+  readableStreamReaderGenericRelease(stream[kState].reader);
+  assert.rejects(iterable.return(), {
+    code: 'ERR_INVALID_STATE',
+  }).then(common.mustCall());
 }
 
 {
@@ -1325,6 +1374,9 @@ class Source {
     code: 'ERR_INVALID_THIS',
   });
   assert.throws(() => ReadableStream.prototype.tee.call({}), {
+    code: 'ERR_INVALID_THIS',
+  });
+  assert.throws(() => ReadableStream.prototype.values.call({}), {
     code: 'ERR_INVALID_THIS',
   });
   assert.throws(() => ReadableStream.prototype[kTransfer].call({}), {

@@ -366,13 +366,13 @@ ADDONS_BINDING_SOURCES := \
 	$(filter-out test/addons/??_*/*.h, $(wildcard test/addons/*/*.h))
 
 ADDONS_PREREQS := config.gypi \
-	deps/npm/node_modules/node-gyp/package.json tools/build-addons.js \
+	deps/npm/node_modules/node-gyp/package.json tools/build-addons.mjs \
 	deps/uv/include/*.h deps/v8/include/*.h \
 	src/node.h src/node_buffer.h src/node_object_wrap.h src/node_version.h
 
 define run_build_addons
 env npm_config_loglevel=$(LOGLEVEL) npm_config_nodedir="$$PWD" \
-	npm_config_python="$(PYTHON)" $(NODE) "$$PWD/tools/build-addons" \
+	npm_config_python="$(PYTHON)" $(NODE) "$$PWD/tools/build-addons.mjs" \
 	"$$PWD/deps/npm/node_modules/node-gyp/bin/node-gyp.js" \
 	$1
 touch $2
@@ -679,7 +679,7 @@ ifneq ("","$(wildcard deps/v8/tools/run-tests.py)")
 # Related CI job: node-test-commit-v8-linux
 test-v8: v8  ## Runs the V8 test suite on deps/v8.
 	export PATH="$(NO_BIN_OVERRIDE_PATH)" && \
-		deps/v8/tools/run-tests.py --gn --arch=$(V8_ARCH) $(V8_TEST_OPTIONS) \
+		$(PYTHON) deps/v8/tools/run-tests.py --gn --arch=$(V8_ARCH) $(V8_TEST_OPTIONS) \
 				mjsunit cctest debugger inspector message preparser \
 				$(TAP_V8)
 	$(info Testing hash seed)
@@ -687,13 +687,13 @@ test-v8: v8  ## Runs the V8 test suite on deps/v8.
 
 test-v8-intl: v8
 	export PATH="$(NO_BIN_OVERRIDE_PATH)" && \
-		deps/v8/tools/run-tests.py --gn --arch=$(V8_ARCH) \
+		$(PYTHON) deps/v8/tools/run-tests.py --gn --arch=$(V8_ARCH) \
 				intl \
 				$(TAP_V8_INTL)
 
 test-v8-benchmarks: v8
 	export PATH="$(NO_BIN_OVERRIDE_PATH)" && \
-		deps/v8/tools/run-tests.py --gn --arch=$(V8_ARCH) \
+		$(PYTHON) deps/v8/tools/run-tests.py --gn --arch=$(V8_ARCH) \
 				benchmarks \
 				$(TAP_V8_BENCHMARKS)
 
@@ -1119,12 +1119,14 @@ pkg: $(PKG)
 
 .PHONY: corepack-update
 corepack-update:
-	rm -rf /tmp/node-corepack-clone
-	git clone 'https://github.com/nodejs/corepack.git' /tmp/node-corepack-clone
-	cd /tmp/node-corepack-clone && yarn pack
-	rm -rf deps/corepack && mkdir -p deps/corepack
-	cd deps/corepack && tar xf /tmp/node-corepack-clone/package.tgz --strip-components=1
+	mkdir -p /tmp/node-corepack
+	curl -qLo /tmp/node-corepack/package.tgz "$$(npm view corepack dist.tarball)"
+
+	rm -rf deps/corepack && mkdir deps/corepack
+	cd deps/corepack && tar xf /tmp/node-corepack/package.tgz --strip-components=1
 	chmod +x deps/corepack/shims/*
+
+	node deps/corepack/dist/corepack.js --version
 
 .PHONY: pkg-upload
 # Note: this is strictly for release builds on release machines only.

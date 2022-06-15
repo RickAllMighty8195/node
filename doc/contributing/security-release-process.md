@@ -19,14 +19,14 @@ steps listed in the process as outlined in
 The current security stewards are documented in the main Node.js
 [README.md](https://github.com/nodejs/node#security-release-stewards).
 
-| Company    | Person   | Release Date |
-| ---------- | -------- | ------------ |
-| NearForm   | Matteo   | 2021-Oct-12  |
-| Datadog    | Bryan    | 2022-Jan-10  |
-| RH and IBM | Joe      |              |
-| NearForm   | Matteo   |              |
-| Datadog    | Vladimir |              |
-| RH and IBM | Michael  |              |
+| Company    | Person          | Release Date |
+| ---------- | --------------- | ------------ |
+| NearForm   | Matteo          | 2021-Oct-12  |
+| Datadog    | Bryan           | 2022-Jan-10  |
+| RH and IBM | Joe             | 2022-Mar-18  |
+| NearForm   | Matteo / Rafael |              |
+| Datadog    | Vladimir        |              |
+| RH and IBM | Michael         |              |
 
 ## Planning
 
@@ -73,6 +73,17 @@ The current security stewards are documented in the main Node.js
 * [ ] Pre-release announcement to nodejs.org blog: _**LINK TO BLOG**_
   (Re-PR the pre-approved branch from nodejs-private/nodejs.org-private to
   nodejs/nodejs.org)
+
+  If the security release will only contain an OpenSSL update consider
+  adding the following to the pre-release announcement:
+
+  ```text
+  Since this security release will only include updates for OpenSSL, if you're using
+  a Node.js version which is part of a distribution which uses a system
+  installed OpenSSL, this Node.js security update might not concern you. You may
+  instead need to update your system OpenSSL libraries, please check the
+  security announcements for the distribution.
+  ```
 
 * [ ] Pre-release announcement [email][]: _**LINK TO EMAIL**_
   * Subject: `Node.js security updates for all active release lines, Month Year`
@@ -171,6 +182,10 @@ out a better way, forward the email you receive to
 * [ ] Close this issue
 
 * [ ] Make sure the PRs for the vulnerabilities are closed.
+
+* [ ] PR in that you stewarded the release in
+  [Security release stewards](https://github.com/nodejs/node/blob/HEAD/doc/contributing/security-release-process.md#security-release-stewards).
+  If necessary add the next rotation of the steward rotation.
 
 [H1 CVE requests]: https://hackerone.com/nodejs/cve_requests
 [docker-node]: https://github.com/nodejs/docker-node/issues
